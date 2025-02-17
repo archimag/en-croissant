@@ -7,6 +7,7 @@ import {
   enginesAtom,
   tabEngineSettingsFamily,
 } from "@/state/atoms";
+import { getVariationLine } from "@/utils/chess";
 import { getBestMoves as chessdbGetBestMoves } from "@/utils/chessdb/api";
 import { positionFromFen, swapMove } from "@/utils/chessops";
 import {
@@ -19,23 +20,25 @@ import { getBestMoves as lichessGetBestMoves } from "@/utils/lichess/api";
 import { useThrottledEffect } from "@/utils/misc";
 import { parseUci } from "chessops";
 import { INITIAL_FEN, makeFen } from "chessops/fen";
+import equal from "fast-deep-equal";
 import { useAtom, useAtomValue } from "jotai";
 import { startTransition, useContext, useEffect, useMemo } from "react";
 import { match } from "ts-pattern";
 import { useStore } from "zustand";
+import { useShallow } from "zustand/react/shallow";
 import { TreeStateContext } from "../common/TreeStateContext";
 
-function EvalListener({
-  fen,
-  moves,
-  chess960,
-}: {
-  fen: string;
-  moves: string[];
-  chess960: boolean;
-}) {
+function EvalListener() {
   const [engines] = useAtom(enginesAtom);
   const threat = useAtomValue(currentThreatAtom);
+  const store = useContext(TreeStateContext)!;
+  const is960 = useStore(store, (s) => s.headers.variant === "Chess960");
+  const fen = useStore(store, (s) => s.root.fen);
+
+  const moves = useStore(
+    store,
+    useShallow((s) => getVariationLine(s.root, s.position, is960)),
+  );
 
   const [pos, error] = positionFromFen(fen);
   if (pos) {
@@ -78,7 +81,7 @@ function EvalListener({
       fen={fen}
       moves={moves}
       threat={threat}
-      chess960={chess960}
+      chess960={is960}
     />
   ));
 }
@@ -124,13 +127,14 @@ function EngineListener({
     }),
   );
   useEffect(() => {
+    if (!settings.enabled) return;
     const unlisten = events.bestMovesPayload.listen(({ payload }) => {
       const ev = payload.bestLines;
       if (
         payload.engine === engine.name &&
         payload.tab === activeTab &&
         payload.fen === searchingFen &&
-        payload.moves.join(",") === searchingMoves.join(",") &&
+        equal(payload.moves, searchingMoves) &&
         settings.enabled &&
         !isGameOver
       ) {

@@ -2,7 +2,7 @@ import { pieceSetAtom } from "@/state/atoms";
 import {
   Box,
   Combobox,
-  Group,
+  Flex,
   Input,
   InputBase,
   ScrollArea,
@@ -50,18 +50,16 @@ const pieceSets: Item[] = [
   { label: "Tatiana", value: "tatiana" },
 ];
 
-function SelectOption({ label, piece }: { label: string; piece?: boolean }) {
+function DisplayPieces() {
+  const pieces = ["rook", "knight", "bishop", "queen", "king", "pawn"] as const;
   return (
-    <Group wrap="nowrap">
-      {piece && (
-        <Box h="2.5rem" w="2.5rem">
-          <PieceComponent piece={{ color: "white", role: "knight" }} />
+    <Flex gap="xs">
+      {pieces.map((role, index) => (
+        <Box key={index} h="2.5rem" w="2.5rem">
+          <PieceComponent piece={{ color: "white", role }} />
         </Box>
-      )}
-      <Text fz="sm" fw={500}>
-        {label}
-      </Text>
-    </Group>
+      ))}
+    </Flex>
   );
 }
 
@@ -73,46 +71,59 @@ export default function PiecesSelect() {
   const [pieceSet, setPieceSet] = useAtom(pieceSetAtom);
 
   const options = pieceSets.map((item) => (
-    <Combobox.Option value={item.value} key={item.value}>
-      <SelectOption label={item.label} />
+    <Combobox.Option
+      value={item.value}
+      key={item.value}
+      onMouseOver={() => setPieceSet(item.value)}
+    >
+      <Text fz="sm" fw={500}>
+        {item.label}
+      </Text>
     </Combobox.Option>
   ));
 
   const selected = pieceSets.find((p) => p.value === pieceSet);
 
   return (
-    <Combobox
-      store={combobox}
-      withinPortal={false}
-      onOptionSubmit={(val) => {
-        setPieceSet(val);
-        combobox.closeDropdown();
-      }}
-    >
-      <Combobox.Target>
-        <InputBase
-          component="button"
-          type="button"
-          pointer
-          onClick={() => combobox.toggleDropdown()}
-          multiline
-          w="10rem"
+    <div>
+      <Flex justify="space-between" align="center" gap="md">
+        <DisplayPieces />
+        <Combobox
+          store={combobox}
+          withinPortal={false}
+          onOptionSubmit={(val) => {
+            setPieceSet(val);
+            combobox.closeDropdown();
+          }}
         >
-          {selected ? (
-            <SelectOption label={selected.label} piece />
-          ) : (
-            <Input.Placeholder>Pick value</Input.Placeholder>
-          )}
-        </InputBase>
-      </Combobox.Target>
+          <Combobox.Target>
+            <InputBase
+              component="button"
+              type="button"
+              pointer
+              onClick={() => combobox.toggleDropdown()}
+              multiline
+              w="10rem"
+            >
+              {selected ? (
+                <Text fz="sm" fw={500}>
+                  {selected.label}
+                </Text>
+              ) : (
+                <Input.Placeholder>Pick value</Input.Placeholder>
+              )}
+            </InputBase>
+          </Combobox.Target>
 
-      <Combobox.Dropdown>
-        <Combobox.Options>
-          <ScrollArea.Autosize mah={200} type="always">
-            {options}
-          </ScrollArea.Autosize>
-        </Combobox.Options>
-      </Combobox.Dropdown>
-    </Combobox>
+          <Combobox.Dropdown>
+            <Combobox.Options>
+              <ScrollArea.Autosize mah={200} type="always" scrollbars="y">
+                {options}
+              </ScrollArea.Autosize>
+            </Combobox.Options>
+          </Combobox.Dropdown>
+        </Combobox>
+      </Flex>
+    </div>
   );
 }

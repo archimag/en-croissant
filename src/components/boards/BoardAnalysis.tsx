@@ -7,7 +7,7 @@ import {
   enableAllAtom,
 } from "@/state/atoms";
 import { keyMapAtom } from "@/state/keybinds";
-import { getVariationLine } from "@/utils/chess";
+import { defaultPGN, getVariationLine } from "@/utils/chess";
 import { saveToFile } from "@/utils/tabs";
 import { Paper, Portal, Stack, Tabs } from "@mantine/core";
 import { useHotkeys, useToggle } from "@mantine/hooks";
@@ -48,13 +48,7 @@ function BoardAnalysis() {
 
   const store = useContext(TreeStateContext)!;
 
-  const rootFen = useStore(store, (s) => s.root.fen);
-  const is960 = useStore(store, (s) => s.headers.variant === "Chess960");
   const dirty = useStore(store, (s) => s.dirty);
-  const moves = useStore(
-    store,
-    useShallow((s) => getVariationLine(s.root, s.position, is960)),
-  );
 
   const reset = useStore(store, (s) => s.reset);
   const clearShapes = useStore(store, (s) => s.clearShapes);
@@ -67,7 +61,7 @@ function BoardAnalysis() {
       tab: currentTab,
       store,
     });
-  }, [setCurrentTab, currentTab]);
+  }, [setCurrentTab, currentTab, documentDir, store]);
   useEffect(() => {
     if (currentTab?.file && autoSave && dirty) {
       saveFile();
@@ -82,7 +76,7 @@ function BoardAnalysis() {
       return { ...prev };
     });
     reset();
-    writeTextFile(currentTab?.file?.path!, "\n\n", {
+    writeTextFile(currentTab?.file?.path!, `\n\n${defaultPGN()}\n\n`, {
       append: true,
     });
   }, [setCurrentTab, reset, currentTab?.file?.path]);
@@ -133,7 +127,7 @@ function BoardAnalysis() {
 
   return (
     <>
-      <EvalListener fen={rootFen} moves={moves} chess960={is960} />
+      <EvalListener />
       <Portal target="#left" style={{ height: "100%" }}>
         <Board
           practicing={practicing}

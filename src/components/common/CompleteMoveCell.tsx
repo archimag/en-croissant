@@ -4,7 +4,7 @@ import type { Annotation } from "@/utils/annotation";
 import { hasMorePriority, stripClock } from "@/utils/chess";
 import { type TreeNode, treeIterator } from "@/utils/treeReducer";
 import { ActionIcon, Box, Menu, Portal, Tooltip } from "@mantine/core";
-import { shallowEqual, useClickOutside } from "@mantine/hooks";
+import { useClickOutside } from "@mantine/hooks";
 import {
   IconArrowsJoin,
   IconChevronUp,
@@ -13,8 +13,10 @@ import {
   IconFlag,
   IconX,
 } from "@tabler/icons-react";
+import equal from "fast-deep-equal";
 import { useAtomValue } from "jotai";
 import { memo, useContext, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import MoveCell from "./MoveCell";
 import { TreeStateContext } from "./TreeStateContext";
@@ -44,7 +46,6 @@ function CompleteMoveCell({
   annotations,
   showComments,
   first,
-  isCurrentVariation,
   isStart,
   targetRef,
 }: {
@@ -55,12 +56,14 @@ function CompleteMoveCell({
   move?: string | null;
   fen?: string;
   first?: boolean;
-  isCurrentVariation: boolean;
   isStart: boolean;
   movePath: number[];
   targetRef: React.RefObject<HTMLSpanElement>;
 }) {
   const store = useContext(TreeStateContext)!;
+  const isCurrentVariation = useStore(store, (s) =>
+    equal(s.position, movePath),
+  );
   const root = useStore(store, (s) => s.root);
   const goToMove = useStore(store, (s) => s.goToMove);
   const deleteMove = useStore(store, (s) => s.deleteMove);
@@ -79,6 +82,7 @@ function CompleteMoveCell({
   const currentTab = useAtomValue(currentTabAtom);
 
   const transpositions = fen ? getTranspositions(fen, movePath, root) : [];
+  const { t } = useTranslation();
 
   return (
     <>
@@ -116,28 +120,28 @@ function CompleteMoveCell({
                     leftSection={<IconFlag size="0.875rem" />}
                     onClick={() => setStart(movePath)}
                   >
-                    Mark as start
+                    {t("Menu.MarkAsStart")}
                   </Menu.Item>
                 )}
                 <Menu.Item
                   leftSection={<IconChevronsUp size="0.875rem" />}
                   onClick={() => promoteToMainline(movePath)}
                 >
-                  Promote to Main Line
+                  {t("Menu.PromoteToMainLine")}
                 </Menu.Item>
 
                 <Menu.Item
                   leftSection={<IconChevronUp size="0.875rem" />}
                   onClick={() => promoteVariation(movePath)}
                 >
-                  Promote Variation
+                  {t("Menu.PromoteVariation")}
                 </Menu.Item>
 
                 <Menu.Item
                   leftSection={<IconCopy size="0.875rem" />}
                   onClick={() => copyVariationPgn(movePath)}
                 >
-                  Copy Variation PGN
+                  {t("Menu.CopyVariationPGN")}
                 </Menu.Item>
 
                 <Menu.Item
@@ -145,7 +149,7 @@ function CompleteMoveCell({
                   leftSection={<IconX size="0.875rem" />}
                   onClick={() => deleteMove(movePath)}
                 >
-                  Delete Move
+                  {t("Menu.DeleteMove")}
                 </Menu.Item>
               </Menu.Dropdown>
             </Portal>
@@ -169,12 +173,11 @@ export default memo(CompleteMoveCell, (prev, next) => {
     prev.move === next.move &&
     prev.fen === next.fen &&
     prev.comment === next.comment &&
-    shallowEqual(prev.annotations, next.annotations) &&
+    equal(prev.annotations, next.annotations) &&
     prev.showComments === next.showComments &&
     prev.first === next.first &&
-    prev.isCurrentVariation === next.isCurrentVariation &&
     prev.isStart === next.isStart &&
-    shallowEqual(prev.movePath, next.movePath) &&
+    equal(prev.movePath, next.movePath) &&
     prev.halfMoves === next.halfMoves
   );
 });
