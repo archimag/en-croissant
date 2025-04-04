@@ -244,6 +244,11 @@ function GameTable() {
                 setActiveTab,
                 pgn: record.moves,
                 headers: record,
+                srcInfo: {
+                  type: "db",
+                  db: file,
+                  id: record.id,
+                },
               });
               navigate({ to: "/" });
             }}
